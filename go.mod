@@ -1,4 +1,4 @@
-module github.com/flyaways/pool
+module github.com/GitHub121380/pool
 
 go 1.12
 

@@ -14,18 +14,18 @@ type GRPCPool struct {
 	Mu          sync.Mutex
 	IdleTimeout time.Duration
 	timeoutType TimeoutType
-	conns       chan *grpcIdleConn
+	conns       chan *GrpcIdleConn
 	factory     func() (*grpc.ClientConn, error)
 	close       func(*grpc.ClientConn) error
 }
 
-type grpcIdleConn struct {
+type GrpcIdleConn struct {
 	Conn *grpc.ClientConn
 	t    time.Time
 }
 
 //Get get from pool
-func (c *GRPCPool) Get() (*grpcIdleConn, error) {
+func (c *GRPCPool) Get() (*GrpcIdleConn, error) {
 	c.Mu.Lock()
 	conns := c.conns
 	c.Mu.Unlock()
@@ -60,13 +60,13 @@ func (c *GRPCPool) Get() (*grpcIdleConn, error) {
 				return nil, err
 			}
 
-			return &grpcIdleConn{Conn: conn, t: time.Now()}, nil
+			return &GrpcIdleConn{Conn: conn, t: time.Now()}, nil
 		}
 	}
 }
 
 //Put put back to pool
-func (c *GRPCPool) Put(conn *grpcIdleConn) error {
+func (c *GRPCPool) Put(conn *GrpcIdleConn) error {
 	if conn == nil || conn.Conn == nil {
 		return errRejected
 	}
@@ -129,7 +129,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 
 	//init pool
 	pool := &GRPCPool{
-		conns: make(chan *grpcIdleConn, o.MaxCap),
+		conns: make(chan *GrpcIdleConn, o.MaxCap),
 		factory: func() (*grpc.ClientConn, error) {
 			target := o.nextTarget()
 			if target == "" {
@@ -156,7 +156,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 			pool.Close()
 			return nil, err
 		}
-		pool.conns <- &grpcIdleConn{Conn: conn, t: time.Now()}
+		pool.conns <- &GrpcIdleConn{Conn: conn, t: time.Now()}
 	}
 
 	return pool, nil

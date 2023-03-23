@@ -41,7 +41,7 @@ func TestGRPCPool_Get(t *testing.T) {
 	type fields struct {
 		Mu          sync.Mutex
 		IdleTimeout time.Duration
-		conns       chan *grpcIdleConn
+		conns       chan *GrpcIdleConn
 		factory     func() (*grpc.ClientConn, error)
 		close       func(*grpc.ClientConn) error
 	}
