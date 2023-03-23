@@ -110,7 +110,7 @@ func ExampleTCPPool() {
 	defer p.Put(conn)
 
 	//todo
-	//conn.DoSomething()
+	//Conn.DoSomething()
 
 	log.Printf("len=%d\n", p.IdleCount())
 }

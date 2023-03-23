@@ -101,14 +101,10 @@ func main() {
  * [https://github.com/fatih/pool](https://github.com/fatih/pool)
  * [https://github.com/silenceper/pool]( https://github.com/silenceper/pool)
  * [https://github.com/daizuozhuo/rpc-example]( https://github.com/daizuozhuo/rpc-example)
+ * [https://github.com/flyaways/pool]( https://github.com/flyaways/pool)
  
 ## Contribution Welcomed !
 
 Contributors
 
-* [flyaways](https://github.com/flyaways) 
-
-## License
-* The MIT License (MIT) - see LICENSE for more details
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fflyaways%2Fpool.svg?type=large)](https://app.fossa.io/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fflyaways%2Fpool?ref=badge_large)
+* [GitHub121380](https://github.com/GitHub121380) 

@@ -79,6 +79,7 @@ func ExampleGRPCPool() {
 		InitTargets:  []string{"127.0.0.1:8080"},
 		InitCap:      5,
 		MaxCap:       30,
+		timeoutType:  IdleTimeoutType,
 		DialTimeout:  time.Second * 5,
 		IdleTimeout:  time.Second * 60,
 		ReadTimeout:  time.Second * 5,
@@ -112,7 +113,7 @@ func ExampleGRPCPool() {
 	defer p.Put(conn)
 
 	//todo
-	//conn.DoSomething()
+	//Conn.DoSomething()
 
 	log.Printf("len=%d\n", p.IdleCount())
 }

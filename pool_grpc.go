@@ -2,6 +2,7 @@ package pool
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -12,18 +13,19 @@ import (
 type GRPCPool struct {
 	Mu          sync.Mutex
 	IdleTimeout time.Duration
+	timeoutType TimeoutType
 	conns       chan *grpcIdleConn
 	factory     func() (*grpc.ClientConn, error)
 	close       func(*grpc.ClientConn) error
 }
 
 type grpcIdleConn struct {
-	conn *grpc.ClientConn
+	Conn *grpc.ClientConn
 	t    time.Time
 }
 
 //Get get from pool
-func (c *GRPCPool) Get() (*grpc.ClientConn, error) {
+func (c *GRPCPool) Get() (*grpcIdleConn, error) {
 	c.Mu.Lock()
 	conns := c.conns
 	c.Mu.Unlock()
@@ -34,32 +36,38 @@ func (c *GRPCPool) Get() (*grpc.ClientConn, error) {
 	for {
 		select {
 		case wrapConn := <-conns:
-			if wrapConn == nil {
+			if wrapConn == nil || wrapConn.Conn == nil {
 				return nil, errClosed
 			}
 			//判断是否超时，超时则丢弃
 			if timeout := c.IdleTimeout; timeout > 0 {
+				switch c.timeoutType {
+				case FixedTimeoutType: //timeout add random duration, avoid massive unusable Conn
+					timeout += time.Millisecond * time.Duration(rand.Intn(120*1000))
+				case IdleTimeoutType:
+				}
+
 				if wrapConn.t.Add(timeout).Before(time.Now()) {
 					//丢弃并关闭该链接
-					c.close(wrapConn.conn)
+					c.close(wrapConn.Conn)
 					continue
 				}
 			}
-			return wrapConn.conn, nil
+			return wrapConn, nil
 		default:
 			conn, err := c.factory()
 			if err != nil {
 				return nil, err
 			}
 
-			return conn, nil
+			return &grpcIdleConn{Conn: conn, t: time.Now()}, nil
 		}
 	}
 }
 
 //Put put back to pool
-func (c *GRPCPool) Put(conn *grpc.ClientConn) error {
-	if conn == nil {
+func (c *GRPCPool) Put(conn *grpcIdleConn) error {
+	if conn == nil || conn.Conn == nil {
 		return errRejected
 	}
 
@@ -67,15 +75,21 @@ func (c *GRPCPool) Put(conn *grpc.ClientConn) error {
 	defer c.Mu.Unlock()
 
 	if c.conns == nil {
-		return c.close(conn)
+		return c.close(conn.Conn)
+	}
+
+	switch c.timeoutType {
+	case FixedTimeoutType:
+	case IdleTimeoutType:
+		conn.t = time.Now()
 	}
 
 	select {
-	case c.conns <- &grpcIdleConn{conn: conn, t: time.Now()}:
+	case c.conns <- conn:
 		return nil
 	default:
 		//连接池已满，直接关闭该链接
-		return c.close(conn)
+		return c.close(conn.Conn)
 	}
 }
 
@@ -95,7 +109,7 @@ func (c *GRPCPool) Close() {
 
 	close(conns)
 	for wrapConn := range conns {
-		closeFun(wrapConn.conn)
+		closeFun(wrapConn.Conn)
 	}
 }
 
@@ -128,6 +142,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 			return grpc.DialContext(ctx, target, dialOptions...)
 		},
 		close:       func(v *grpc.ClientConn) error { return v.Close() },
+		timeoutType: o.timeoutType,
 		IdleTimeout: o.IdleTimeout,
 	}
 
@@ -141,7 +156,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 			pool.Close()
 			return nil, err
 		}
-		pool.conns <- &grpcIdleConn{conn: conn, t: time.Now()}
+		pool.conns <- &grpcIdleConn{Conn: conn, t: time.Now()}
 	}
 
 	return pool, nil

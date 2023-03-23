@@ -17,8 +17,8 @@ var (
 type TimeoutType int
 
 const (
-	IdleTimeoutType TimeoutType = iota
-	FixedTimeoutType
+	IdleTimeoutType  TimeoutType = iota + 1 //idled during timeout
+	FixedTimeoutType                        //alive during timeout, like life cycle
 )
 
 func init() {
