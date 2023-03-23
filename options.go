@@ -14,28 +14,30 @@ var (
 	errTargets  = errors.New("targets server is empty")
 )
 
+type TimeoutType int
+
+const (
+	IdleTimeoutType TimeoutType = iota
+	FixedTimeoutType
+)
+
 func init() {
 	rand.NewSource(time.Now().UnixNano())
 }
 
 //Options pool options
 type Options struct {
-	lock sync.RWMutex
-	//targets node
-	targets *[]string
-	//targets channel
-	input chan *[]string
-
-	//InitTargets init targets
-	InitTargets []string
-	// init connection
-	InitCap int
-	// max connections
-	MaxCap       int
-	DialTimeout  time.Duration
-	IdleTimeout  time.Duration
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	lock         sync.RWMutex
+	targets      *[]string      //targets node
+	input        chan *[]string //targets channel
+	InitTargets  []string       //InitTargets init targets
+	InitCap      int            // init connection
+	MaxCap       int            // max connections
+	timeoutType  TimeoutType    //timeout type, fixed or idle
+	DialTimeout  time.Duration  //dial timeout
+	IdleTimeout  time.Duration  //timeout in program
+	ReadTimeout  time.Duration  //unused
+	WriteTimeout time.Duration  //unused
 }
 
 // Input is the input channel
@@ -67,6 +69,7 @@ func NewOptions() *Options {
 	o := &Options{}
 	o.InitCap = 5
 	o.MaxCap = 100
+	o.timeoutType = IdleTimeoutType
 	o.DialTimeout = 5 * time.Second
 	o.ReadTimeout = 5 * time.Second
 	o.WriteTimeout = 5 * time.Second
@@ -80,6 +83,7 @@ func (o *Options) validate() error {
 		o.InitCap <= 0 ||
 		o.MaxCap <= 0 ||
 		o.InitCap > o.MaxCap ||
+		!(o.timeoutType == IdleTimeoutType || o.timeoutType == FixedTimeoutType) ||
 		o.DialTimeout == 0 ||
 		o.ReadTimeout == 0 ||
 		o.WriteTimeout == 0 {

@@ -33,7 +33,8 @@ go get -u gopkg.in/flyaways/pool.v1
 ## Usage
 
 ```go
-import "gopkg.in/flyaways/pool.v1"
+//import "gopkg.in/flyaways/pool.v1"
+import "github.com/GitHub121380/pool"
 ```
 
 ## Example
