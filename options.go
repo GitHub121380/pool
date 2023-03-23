@@ -33,7 +33,7 @@ type Options struct {
 	InitTargets  []string       //InitTargets init targets
 	InitCap      int            // init connection
 	MaxCap       int            // max connections
-	timeoutType  TimeoutType    //timeout type, fixed or idle
+	TimeoutType  TimeoutType    //timeout type, fixed or idle
 	DialTimeout  time.Duration  //dial timeout
 	IdleTimeout  time.Duration  //timeout in program
 	ReadTimeout  time.Duration  //unused
