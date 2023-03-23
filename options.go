@@ -69,7 +69,7 @@ func NewOptions() *Options {
 	o := &Options{}
 	o.InitCap = 5
 	o.MaxCap = 100
-	o.timeoutType = IdleTimeoutType
+	o.TimeoutType = IdleTimeoutType
 	o.DialTimeout = 5 * time.Second
 	o.ReadTimeout = 5 * time.Second
 	o.WriteTimeout = 5 * time.Second
@@ -83,7 +83,7 @@ func (o *Options) validate() error {
 		o.InitCap <= 0 ||
 		o.MaxCap <= 0 ||
 		o.InitCap > o.MaxCap ||
-		!(o.timeoutType == IdleTimeoutType || o.timeoutType == FixedTimeoutType) ||
+		!(o.TimeoutType == IdleTimeoutType || o.TimeoutType == FixedTimeoutType) ||
 		o.DialTimeout == 0 ||
 		o.ReadTimeout == 0 ||
 		o.WriteTimeout == 0 {
