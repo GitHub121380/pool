@@ -41,12 +41,6 @@ func (c *GRPCPool) Get() (*GrpcIdleConn, error) {
 			}
 			//判断是否超时，超时则丢弃
 			if timeout := c.IdleTimeout; timeout > 0 {
-				switch c.timeoutType {
-				case FixedTimeoutType: //timeout add random duration, avoid massive unusable Conn
-					timeout += time.Millisecond * time.Duration(rand.Intn(120*1000))
-				case IdleTimeoutType:
-				}
-
 				if wrapConn.t.Add(timeout).Before(time.Now()) {
 					//丢弃并关闭该链接
 					c.close(wrapConn.Conn)
@@ -59,10 +53,18 @@ func (c *GRPCPool) Get() (*GrpcIdleConn, error) {
 			if err != nil {
 				return nil, err
 			}
-
-			return &GrpcIdleConn{Conn: conn, t: time.Now()}, nil
+			return c.createGrpcIdleConn(conn), nil
 		}
 	}
+}
+func (c *GRPCPool) createGrpcIdleConn(conn *grpc.ClientConn) *GrpcIdleConn {
+	t := time.Now()
+	switch c.timeoutType {
+	case IdleTimeoutType:
+	case FixedTimeoutType: //create time advances random life cycle, avoid massive unusable Conn, alive: 1~1.5
+		t = t.Add(-time.Millisecond * time.Duration(rand.Int63n(c.IdleTimeout.Milliseconds()/2)))
+	}
+	return &GrpcIdleConn{Conn: conn, t: t}
 }
 
 //Put put back to pool
@@ -79,9 +81,9 @@ func (c *GRPCPool) Put(conn *GrpcIdleConn) error {
 	}
 
 	switch c.timeoutType {
-	case FixedTimeoutType:
 	case IdleTimeoutType:
 		conn.t = time.Now()
+	case FixedTimeoutType:
 	}
 
 	select {
@@ -142,7 +144,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 			return grpc.DialContext(ctx, target, dialOptions...)
 		},
 		close:       func(v *grpc.ClientConn) error { return v.Close() },
-		timeoutType: o.timeoutType,
+		timeoutType: o.TimeoutType,
 		IdleTimeout: o.IdleTimeout,
 	}
 
@@ -156,7 +158,7 @@ func NewGRPCPool(o *Options, dialOptions ...grpc.DialOption) (*GRPCPool, error) 
 			pool.Close()
 			return nil, err
 		}
-		pool.conns <- &GrpcIdleConn{Conn: conn, t: time.Now()}
+		pool.conns <- pool.createGrpcIdleConn(conn)
 	}
 
 	return pool, nil
