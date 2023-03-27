@@ -62,7 +62,7 @@ func (c *GRPCPool) createGrpcIdleConn(conn *grpc.ClientConn) *GrpcIdleConn {
 	switch c.timeoutType {
 	case IdleTimeoutType:
 	case FixedTimeoutType: //create time advances random life cycle, avoid massive unusable Conn, alive: 1~1.5
-		t = t.Add(-time.Millisecond * time.Duration(rand.Int63n(c.IdleTimeout.Milliseconds()/2)))
+		t = t.Add(time.Millisecond * time.Duration(rand.Int63n(c.IdleTimeout.Milliseconds()/2)))
 	}
 	return &GrpcIdleConn{Conn: conn, t: t}
 }
